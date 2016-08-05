@@ -32,7 +32,9 @@ deps:
 clean:
 	go clean
 
-build: deps
-	go build $(BUILD_FLAGS) -o $(PACKAGE) ./cmd
+build_cli: deps
+	go build $(BUILD_FLAGS) -o $(PACKAGE) ./cmd/...
 
-.PHONY: fmt vet lint test bench doc deps clean build
+build: build_cli
+
+.PHONY: fmt vet lint test bench doc deps clean build_cli build

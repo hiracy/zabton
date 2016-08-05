@@ -50,7 +50,7 @@ func (c *Command) Usage() {
 // Commands lists the available commands and help topics.
 // The order here is the order in which they are printed by 'zabton help'.
 var commands = []*Command{
-	cmdSub,
+	cmdVersion,
 }
 
 func main() {
