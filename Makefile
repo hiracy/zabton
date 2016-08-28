@@ -3,7 +3,6 @@ VERSION := $(shell cat VERSION)
 DATE := $(shell date +%Y-%m-%dT%H:%M:%S%z)
 BUILD_FLAGS = -ldflags "\
 	      -X main.Version=$(VERSION) \
-              -X main.buildDate=$(DATE) \
 	      "
 
 all: clean build test
@@ -29,10 +28,14 @@ doc:
 deps:
 	go get -d -v ./...
 
+deps_local:
+	rm -fr ${GOPATH}/src/github.com/hiracy/zabton
+	cp -r ../$(PACKAGE) ${GOPATH}/src/github.com/hiracy
+
 clean:
 	go clean
 
-build: fmt
+build: fmt deps deps_local
 	go build $(BUILD_FLAGS) -o $(PACKAGE) main.go
 
 .PHONY: fmt vet lint test bench doc deps clean build_cli build
