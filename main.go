@@ -8,13 +8,17 @@ import (
 	"github.com/urfave/cli"
 )
 
+// Version is the package version
 var Version string
 
 func main() {
 	cli.VersionPrinter = printVersion
 	app := cli.NewApp()
 	app.Name = "zabton"
-	app.Usage = "Zabbix API and CLI tool set."
+	app.Usage = `Zabbix API and CLI tool set."
+
+See Zabbix Official Documents(https://www.zabbix.com/documentation/3.0/manual/api)
+	`
 	app.Version = Version
 	commands.Build(app)
 

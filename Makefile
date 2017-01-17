@@ -5,27 +5,30 @@ BUILD_FLAGS = -ldflags "\
 	      -X main.Version=$(VERSION) \
 	      "
 
-all: clean build test
+all: setup clean build test
 
-fmt:
+setup:
+	go get github.com/golang/lint/golint
+
+fmt: setup
 	go fmt ./...
 
-vet:
+vet: setup
 	go vet ./...
 
-lint:
+lint: setup
 	golint ./...
 
 test:
 	go test -v ./...
 
-bench:
+bench: setup
 	go test ./... -bench=.
 
-doc:
+doc: setup
 	godoc -http=:6060
 
-deps:
+deps: setup
 	go get -d -v ./...
 
 deps_local:
@@ -33,6 +36,7 @@ deps_local:
 	cp -r ../$(PACKAGE) ${GOPATH}/src/github.com/hiracy
 
 clean:
+	rm -fr ${GOPATH}/src/github.com/hiracy/zabton
 	go clean
 
 build: fmt deps deps_local
