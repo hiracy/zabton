@@ -12,7 +12,7 @@ func TestVersionFileFormat(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	matched, err := regexp.MatchString("^[0-9]+.[0-9]+.[0-9]+", string(str))
+	matched, err := regexp.MatchString(`^[0-9]+.[0-9]+.[0-9]+`, string(str))
 	if err != nil {
 		t.Errorf("%v", err)
 	} else if !matched {
