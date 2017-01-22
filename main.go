@@ -15,7 +15,7 @@ func main() {
 	cli.VersionPrinter = printVersion
 	app := cli.NewApp()
 	app.Name = "zabton"
-	app.Usage = `Zabbix API and CLI tool set."
+	app.Usage = `CLI for managing Zabbix with text base config.
 
 See Zabbix Official Documents(https://www.zabbix.com/documentation/3.0/manual/api)
 	`
