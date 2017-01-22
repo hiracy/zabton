@@ -40,6 +40,6 @@ clean:
 	go clean
 
 build: fmt deps deps_local
-	go build $(BUILD_FLAGS) -o $(PACKAGE) main.go
+	go build $(BUILD_FLAGS) -o $(PACKAGE) .
 
 .PHONY: fmt vet lint test bench doc deps clean build_cli build
