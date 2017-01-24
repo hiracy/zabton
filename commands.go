@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-
+	"github.com/hiracy/zabton/logger"
 	"github.com/urfave/cli"
 )
 
@@ -41,16 +40,16 @@ var diffCmd = cli.Command{
 }
 
 func doPullCmd(c *cli.Context) error {
-	fmt.Println("new task template: ", c.Args().First())
+	logger.Log("info", "start pull cmd")
 	return nil
 }
 
 func doPushCmd(c *cli.Context) error {
-	fmt.Println("new task template: ", c.Args().First())
+	logger.Log("info", "start push cmd")
 	return nil
 }
 
 func doDiffCmd(c *cli.Context) error {
-	fmt.Println("new task template: ", c.Args().First())
+	logger.Log("info", "start diff cmd")
 	return nil
 }
