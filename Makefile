@@ -39,7 +39,7 @@ clean:
 	rm -fr ${GOPATH}/src/github.com/hiracy/zabton
 	go clean
 
-build: fmt deps deps_local
+build: fmt deps_local deps
 	go build $(BUILD_FLAGS) -o $(PACKAGE) .
 
 .PHONY: fmt vet lint test bench doc deps clean build_cli build
