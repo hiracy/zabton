@@ -19,6 +19,11 @@ var pullCmd = cli.Command{
                 Pull text config file from specified Zabbix server.
 `,
 	Action: doPullCmd,
+	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:  "server, s",
+			Usage: "Zabbix server url(ex: http://api.zabbix.zabton.jp/api_jsonrpc.ph)"},
+	},
 }
 
 var pushCmd = cli.Command{
@@ -40,7 +45,9 @@ var diffCmd = cli.Command{
 }
 
 func doPullCmd(c *cli.Context) error {
-	logger.Log("info", "start pull cmd")
+	logger.Log("info", "start pull cmd: "+
+		"server="+c.String("server"))
+
 	return nil
 }
 
