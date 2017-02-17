@@ -16,6 +16,7 @@ func init() {
 	colog.Register()
 }
 
+// Log provides general log output.
 func Log(severity, message string) {
 	switch severity {
 	case "trace", "debug", "info", "warn", "error", "alert":
@@ -25,4 +26,9 @@ func Log(severity, message string) {
 		severity = ""
 	}
 	log.Printf(severity + ": " + message)
+}
+
+// Debug provides debug log output.
+func Debug(message string) {
+	Log("debug", message)
 }
