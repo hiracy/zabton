@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/hiracy/zabton/logger"
+	"github.com/hiracy/zabton/zabbix"
 	"github.com/urfave/cli"
 )
 
@@ -23,6 +24,12 @@ var pullCmd = cli.Command{
 		cli.StringFlag{
 			Name:  "server, s",
 			Usage: "Zabbix server url(ex: http://api.zabbix.zabton.jp/api_jsonrpc.ph)"},
+		cli.StringFlag{
+			Name:  "user, u",
+			Usage: "Login user"},
+		cli.StringFlag{
+			Name:  "password, p",
+			Usage: "Login password"},
 	},
 }
 
@@ -47,6 +54,13 @@ var diffCmd = cli.Command{
 func doPullCmd(c *cli.Context) error {
 	logger.Log("info", "start pull cmd: "+
 		"server="+c.String("server"))
+
+	api := zabbix.NewAPI(
+		c.String("server"),
+		c.String("user"),
+		c.String("password"))
+
+	api.Login()
 
 	return nil
 }
