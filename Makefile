@@ -40,6 +40,6 @@ clean:
 	go clean
 
 build: fmt
-	go build $(BUILD_FLAGS) -o $(PACKAGE) .
+	go build $(BUILD_FLAGS) -o "$(TARGET_DIR)/$(PACKAGE)" .
 
 .PHONY: fmt vet lint test bench doc deps clean build_cli build
