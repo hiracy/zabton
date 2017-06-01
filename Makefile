@@ -1,19 +1,19 @@
 PACKAGE=$(shell basename `pwd`)
-VERSION := $(shell cat VERSION)
-DATE := $(shell date +%Y-%m-%dT%H:%M:%S%z)
+VERSION := $(shell git describe --tags | awk -F'-' '{print $$1}')
+TARGET_DIR = dist
 BUILD_FLAGS = -ldflags "\
 	      -X main.Version=$(VERSION) \
 	      "
 
-all: setup clean build test
+all: clean deps build test
 
 setup:
 	go get github.com/golang/lint/golint
 
-fmt: setup
+fmt:
 	go fmt ./...
 
-vet: setup
+vet:
 	go vet ./...
 
 lint: setup
@@ -22,13 +22,13 @@ lint: setup
 test:
 	go test -v ./...
 
-bench: setup
+bench:
 	go test ./... -bench=.
 
-doc: setup
+doc:
 	godoc -http=:6060
 
-deps: setup
+deps: deps_local
 	go get -d -v ./...
 
 deps_local:
@@ -39,7 +39,7 @@ clean:
 	rm -fr ${GOPATH}/src/github.com/hiracy/zabton
 	go clean
 
-build: fmt deps_local deps
-	go build $(BUILD_FLAGS) -o $(PACKAGE) .
+build: fmt
+	go build $(BUILD_FLAGS) -o "$(TARGET_DIR)/$(PACKAGE)" .
 
 .PHONY: fmt vet lint test bench doc deps clean build_cli build

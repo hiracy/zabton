@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/hiracy/zabton/logger"
-	"github.com/hiracy/zabton/zabbix"
+	//	"github.com/hiracy/zabton/zabbix"
 	"github.com/urfave/cli"
 )
 
@@ -52,15 +52,16 @@ var diffCmd = cli.Command{
 }
 
 func doPullCmd(c *cli.Context) error {
+	logger.SetLevel(c.GlobalString("log-level"))
 	logger.Log("info", "start pull cmd: "+
 		"server="+c.String("server"))
 
-	api := zabbix.NewAPI(
-		c.String("server"),
-		c.String("user"),
-		c.String("password"))
-
-	api.Login()
+	//	api := zabbix.NewAPI(
+	//		c.String("server"),
+	//		c.String("user"),
+	//		c.String("password"))
+	//
+	//	api.Login()
 
 	return nil
 }

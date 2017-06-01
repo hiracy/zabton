@@ -28,6 +28,25 @@ func Log(severity, message string) {
 	log.Printf(severity + ": " + message)
 }
 
+// SeLevel set log output level.
+func SetLevel(level string) {
+	switch level {
+	case "trace":
+		colog.SetMinLevel(colog.LTrace)
+	case "debug":
+		colog.SetMinLevel(colog.LDebug)
+	case "info":
+		colog.SetMinLevel(colog.LInfo)
+	case "warn":
+		colog.SetMinLevel(colog.LWarning)
+	case "fatal", "error":
+		colog.SetMinLevel(colog.LError)
+	case "alert":
+		colog.SetMinLevel(colog.LAlert)
+	}
+}
+
+// Debug provides debug string.
 func Debug(message string) {
 	Log("debug", message)
 }
