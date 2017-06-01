@@ -28,7 +28,6 @@ func Log(severity, message string) {
 	log.Printf(severity + ": " + message)
 }
 
-// Debug provides debug log output.
 func Debug(message string) {
 	Log("debug", message)
 }
