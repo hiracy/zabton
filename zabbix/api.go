@@ -1,6 +1,7 @@
 package zabbix
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -9,7 +10,7 @@ type API struct {
 	URL      string
 	User     string
 	Password string
-	Auth     String
+	Auth     string
 }
 
 type rpcRequest struct {
@@ -38,36 +39,39 @@ func (e *ZabbixError) Error() string {
 }
 
 // NewAPI creates new zabbix api object.
-func NewAPI(url, user, password) *API {
+func NewAPI(url, user, password string) *API {
 	return &API{URL: url, User: user, Password: password}
 }
 
 // Login  actually login to zabbix server.
 func (api *API) Login() (auth string, err error) {
 	params := make(map[string]string)
-	params["user"] = api.user
-	params["passwlrd"] = api.password
+	params["user"] = api.User
+	params["passwlrd"] = api.Password
 
 	res, err := api.request("user.login", params)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if res.Error.Code != 0 {
-		return &res.Error
+		return "", nil
 	}
 
 	auth = res.Result.(string)
 	api.Auth = auth
-	return
+
+	return "", nil
 }
 
 // request requests api to zabbix server.
-//func (api *API) request() (method string, params interface{}) (RpcResponse, error) {
-//}
+func (api *API) request(method string, params interface{}) (RpcResponse, error) {
+	res := new(RpcResponse)
+	return *res, nil
+}
 
 // transactionId generates zabbix session id.
-func transactionId() {
+func transactionId() int64 {
 	seed := time.Now().UnixNano() / 1000
 	return seed - ((seed / 1000000000) * 1000000000)
 }
