@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/hiracy/zabton/logger"
-	//	"github.com/hiracy/zabton/zabbix"
+	"github.com/hiracy/zabton/zabbix"
 	"github.com/urfave/cli"
 )
 
@@ -23,7 +23,7 @@ var pullCmd = cli.Command{
 	Flags: []cli.Flag{
 		cli.StringFlag{
 			Name:  "server, s",
-			Usage: "Zabbix server url(ex: http://api.zabbix.zabton.jp/api_jsonrpc.ph)"},
+			Usage: "Zabbix server url(ex: http://api.zabbix.zabton.jp/api_jsonrpc.php)"},
 		cli.StringFlag{
 			Name:  "user, u",
 			Usage: "Login user"},
@@ -53,15 +53,29 @@ var diffCmd = cli.Command{
 
 func doPullCmd(c *cli.Context) error {
 	logger.SetLevel(c.GlobalString("log-level"))
-	logger.Log("info", "start pull cmd: "+
-		"server="+c.String("server"))
 
-	//	api := zabbix.NewAPI(
-	//		c.String("server"),
-	//		c.String("user"),
-	//		c.String("password"))
-	//
-	//	api.Login()
+	server := c.String("server")
+	user := c.String("user")
+	password := c.String("password")
+
+	logger.Log("info", "start pull cmd: "+
+		"server="+server)
+
+	if server == "" || user == "" || password == "" {
+		logger.Log("warn", "server(s) and user(u) and password(p) args are required.")
+		return nil
+	}
+
+	api := zabbix.NewAPI(server, user, password)
+
+	auth, err := api.Login()
+
+	if err != nil {
+		logger.Log("error", "Login: "+err.Error())
+		return nil
+	}
+
+	logger.Log("debug", "auth: "+auth)
 
 	return nil
 }
