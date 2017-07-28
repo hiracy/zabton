@@ -1,8 +1,11 @@
 package zabbix
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"time"
+	"io/ioutil"
+	"net/http"
 )
 
 // API is the object of basic login information for zabbbix server.
@@ -11,9 +14,10 @@ type API struct {
 	User     string
 	Password string
 	Auth     string
+	client   http.Client
 }
 
-type rpcRequest struct {
+type JsonRpcRequest struct {
 	Jsonrpc string      `json:"jsonrpc"`
 	Method  string      `json:"method"`
 	Params  interface{} `json:"params"`
@@ -21,7 +25,7 @@ type rpcRequest struct {
 	Id      int32       `json:"id"`
 }
 
-type RpcResponse struct {
+type JsonRpcResponse struct {
 	Jsonrpc string       `json:"jsonrpc"`
 	Error   *ZabbixError `json:"error"`
 	Result  interface{}  `json:"result"`
@@ -40,38 +44,65 @@ func (e *ZabbixError) Error() string {
 
 // NewAPI creates new zabbix api object.
 func NewAPI(url, user, password string) *API {
-	return &API{URL: url, User: user, Password: password}
+	return &API{url, user, password, "", http.Client{}}
 }
 
-// Login  actually login to zabbix server.
+// Login actually login to zabbix server.
 func (api *API) Login() (auth string, err error) {
 	params := make(map[string]string)
 	params["user"] = api.User
-	params["passwlrd"] = api.Password
+	params["password"] = api.Password
 
 	res, err := api.request("user.login", params)
 	if err != nil {
 		return "", err
 	}
 
-	if res.Error.Code != 0 {
-		return "", nil
+	if res.Error != nil && res.Error.Code != 0 {
+		return "", res.Error
 	}
 
 	auth = res.Result.(string)
 	api.Auth = auth
 
-	return "", nil
+	return
 }
 
 // request requests api to zabbix server.
-func (api *API) request(method string, params interface{}) (RpcResponse, error) {
-	res := new(RpcResponse)
-	return *res, nil
-}
+func (api *API) request(method string, params interface{}) (response JsonRpcResponse, err error) {
+	var id int32
+	id = 1
+	req := JsonRpcRequest{"2.0", method, params, api.Auth, id}
+	jsondata, err := json.Marshal(req)
+	if err != nil {
+		return JsonRpcResponse{}, err
+	}
 
-// transactionId generates zabbix session id.
-func transactionId() int64 {
-	seed := time.Now().UnixNano() / 1000
-	return seed - ((seed / 1000000000) * 1000000000)
+	request, err := http.NewRequest("POST", api.URL, bytes.NewReader(jsondata))
+	if err != nil {
+		return JsonRpcResponse{}, err
+	}
+
+	request.ContentLength = int64(len(jsondata))
+	request.Header.Add("Content-Type", "application/json-rpc")
+	request.Header.Add("User-Agent", "github.com/hiracy/zabton")
+
+	res, err := api.client.Do(request)
+
+	if err != nil {
+		return JsonRpcResponse{}, err
+	}
+
+	defer res.Body.Close()
+
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return JsonRpcResponse{}, err
+	}
+
+	if err := json.Unmarshal(b, &response); err != nil {
+		return JsonRpcResponse{}, err
+	}
+
+	return
 }
