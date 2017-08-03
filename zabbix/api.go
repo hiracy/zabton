@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 // API is the object of basic login information for zabbbix server.
@@ -44,6 +45,12 @@ func (e *ZabbixError) Error() string {
 
 // NewAPI creates new zabbix api object.
 func NewAPI(url, user, password string) *API {
+	if !strings.HasPrefix(url, "http://") &&
+		!strings.HasPrefix(url, "https://") {
+		url = "http://" + url
+	}
+	fmt.Println(url)
+
 	return &API{url, user, password, "", http.Client{}}
 }
 

@@ -19,10 +19,10 @@ vet:
 lint: setup
 	golint ./...
 
-setup_docker_zabbix_latest:
-	@./test/setup_docker.sh -i monitoringartist/zabbix-xxl:latest
+setup_docker:
+	@./test/setup_docker.sh
 
-test: setup_docker_zabbix_latest
+test: setup_docker
 	go test -v ./...
 
 bench:
