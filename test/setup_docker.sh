@@ -3,8 +3,11 @@
 set -e
 PATH=/usr/local/bin:/usr/sbin:/sbin:/usr/bin:/bin
 
-ZABBIX_DB_DOCKER_IMAGE="monitoringartist/zabbix-db-mariadb"
-ZABBIX_DOCKER_IMAGE="monitoringartist/zabbix-xxl:latest"
+ZABBIX_DB_DOCKER_IMAGE=${ZABBIX_DB_DOCKER_IMAGE:-"monitoringartist/zabbix-db-mariadb"}
+ZABBIX_DOCKER_IMAGE=${ZABBIX_DOCKER_IMAGE:-"monitoringartist/zabbix-xxl:latest"}
+ZABBIX_HTTP_PROXY_PORT=${ZABBIX_HTTP_PROXY_PORT:-8080}
+ZABBIX_DB_USER=${ZABBIX_DB_USER:-"zabbix"}
+ZABBIX_DB_PASSWORD=${ZABBIX_DB_PASSWORD:-"zabbix"}
 ZABBIX_DB_DOCKER_CONTAINER_NAME=(`echo "${ZABBIX_DOCKER_IMAGE}/zabbix-db" | sed -e 's/\//-/g' | sed -e 's/\:/-/g'`)
 ZABBIX_CONTAINER_NAME=(`echo "${ZABBIX_DOCKER_IMAGE}" | sed -e 's/^.*\///g' | sed -e 's/\:/-/g'`)
 DOCKER_CACHE_DIR="/var/lib/docker/cache"
@@ -15,9 +18,6 @@ ZABBIX_CACHE_IMAGE_DIR="${DOCKER_CACHE_ZABBIX_DIR}/${ZABBIX_CONTAINER_NAME}"
 ZABBIX_CACHE_IMAGE_PATH="${DOCKER_CACHE_ZABBIX_DIR}/${ZABBIX_CONTAINER_NAME}/zabbix_server.tar"
 CLEAN=0
 PROJECT_NAME=$(cd $(dirname $0)/.. && basename `pwd`)
-ZABBIX_DB_USER="zabbix"
-ZABBIX_DB_PASSWORD="zabbix"
-ZABBIX_HTTP_PROXY_PORT=8080
 
 usage () {
   echo "Usage: `basename $0` [options]"
@@ -48,7 +48,7 @@ parse_opts $@
 
 if ! sudo docker info > /dev/null 2>&1; then
   echo "docker daemon is not running."
-  exit 0
+  exit 1
 fi
 
 if [ ${CLEAN} -eq 1 ];then
@@ -126,7 +126,6 @@ if ! sudo docker ps -a | grep -w "${ZABBIX_DOCKER_IMAGE}" > /dev/null 2>&1; then
   set +e
   while :
   do
-#    sudo docker exec -it ${ZABBIX_CONTAINER_NAME}  ps -C zabbix_server | grep "API is available" > /dev/null 2>&1
     sudo docker exec -it ${ZABBIX_CONTAINER_NAME}  ps -C zabbix_server > /dev/null 2>&1
 
     if [ $? -eq 0 ]; then
