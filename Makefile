@@ -5,7 +5,7 @@ BUILD_FLAGS = -ldflags "\
 	      -X main.Version=$(VERSION) \
 	      "
 
-all: clean deps build test
+all: clean deps build
 
 setup:
 	go get github.com/golang/lint/golint

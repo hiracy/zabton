@@ -53,6 +53,22 @@ func NewAPI(url, user, password string) *API {
 	return &API{url, user, password, "", http.Client{}}
 }
 
+// Version return zabbix server api version.
+func (api *API) Version() (version string, err error) {
+	res, err := api.request("apiinfo.version", map[string]string{})
+	if err != nil {
+		return "", err
+	}
+
+	if res.Error != nil && res.Error.Code != 0 {
+		return "", res.Error
+	}
+
+	version = res.Result.(string)
+
+	return
+}
+
 // Login actually login to zabbix server.
 func (api *API) Login() (auth string, err error) {
 	params := make(map[string]string)
