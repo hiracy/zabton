@@ -62,7 +62,7 @@ func doPullCmd(c *cli.Context) error {
 		"server="+server)
 
 	if server == "" || user == "" || password == "" {
-		logger.Log("warn", "server(s) and user(u) and password(p) args are required.")
+		logger.Log("warn", "--server(-s) and --user(-u) and --password(-p) args are required.")
 		return nil
 	}
 

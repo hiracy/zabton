@@ -49,7 +49,6 @@ func NewAPI(url, user, password string) *API {
 		!strings.HasPrefix(url, "https://") {
 		url = "http://" + url
 	}
-	fmt.Println(url)
 
 	return &API{url, user, password, "", http.Client{}}
 }
