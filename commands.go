@@ -2,10 +2,17 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/hiracy/zabton/logger"
 	"github.com/hiracy/zabton/zabbix"
 	"github.com/urfave/cli"
+)
+
+const (
+	ENV_ZABBIX_API_URL      = "ZABTON_ZABBIX_URL"
+	ENV_ZABBIX_API_USER     = "ZABTON_ZABBIX_USER"
+	ENV_ZABBIX_API_PASSWORD = "ZABTON_ZABBIX_PASSWORD"
 )
 
 // Commands cli.Command object list
@@ -71,7 +78,11 @@ var diffCmd = cli.Command{
 func doApiInfoCmd(c *cli.Context) error {
 	logger.SetLevel(c.GlobalString("log-level"))
 
-	server := c.String("server")
+	var server string
+
+	if server = os.Getenv(ENV_ZABBIX_API_URL); server == "" {
+		server = c.String("server")
+	}
 
 	logger.Log("info", "start info cmd: "+
 		"server="+server)
@@ -118,9 +129,19 @@ func doDiffCmd(c *cli.Context) error {
 }
 
 func login(c *cli.Context, mode string) string {
-	server := c.String("server")
-	user := c.String("user")
-	password := c.String("password")
+	var server string
+	var user string
+	var password string
+
+	if server = os.Getenv(ENV_ZABBIX_API_URL); server == "" {
+		server = c.String("server")
+	}
+	if user = os.Getenv(ENV_ZABBIX_API_USER); user == "" {
+		user = c.String("user")
+	}
+	if password = os.Getenv(ENV_ZABBIX_API_PASSWORD); password == "" {
+		password = c.String("password")
+	}
 
 	logger.Log("info", "start "+mode+" cmd: "+
 		"server="+server)
