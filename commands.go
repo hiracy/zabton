@@ -30,11 +30,6 @@ var apiInfoCmd = cli.Command{
                 Show Zabbix Server API Version.
 `,
 	Action: doApiInfoCmd,
-	Flags: []cli.Flag{
-		cli.StringFlag{
-			Name:  "server, s",
-			Usage: "Zabbix server url(ex: http://api.zabbix.zabton.jp/api_jsonrpc.php)"},
-	},
 }
 
 var pullCmd = cli.Command{
@@ -44,17 +39,6 @@ var pullCmd = cli.Command{
                 Pull text config file from specified Zabbix Server.
 `,
 	Action: doPullCmd,
-	Flags: []cli.Flag{
-		cli.StringFlag{
-			Name:  "server, s",
-			Usage: "Zabbix server url(ex: http://api.zabbix.zabton.jp/api_jsonrpc.php)"},
-		cli.StringFlag{
-			Name:  "user, u",
-			Usage: "Login user"},
-		cli.StringFlag{
-			Name:  "password, p",
-			Usage: "Login password"},
-	},
 }
 
 var pushCmd = cli.Command{
@@ -81,7 +65,7 @@ func doApiInfoCmd(c *cli.Context) error {
 	var server string
 
 	if server = os.Getenv(ENV_ZABBIX_API_URL); server == "" {
-		server = c.String("server")
+		server = c.GlobalString("server")
 	}
 
 	logger.Log("info", "start info cmd: "+
@@ -134,13 +118,13 @@ func login(c *cli.Context, mode string) string {
 	var password string
 
 	if server = os.Getenv(ENV_ZABBIX_API_URL); server == "" {
-		server = c.String("server")
+		server = c.GlobalString("server")
 	}
 	if user = os.Getenv(ENV_ZABBIX_API_USER); user == "" {
-		user = c.String("user")
+		user = c.GlobalString("user")
 	}
 	if password = os.Getenv(ENV_ZABBIX_API_PASSWORD); password == "" {
-		password = c.String("password")
+		password = c.GlobalString("password")
 	}
 
 	logger.Log("info", "start "+mode+" cmd: "+
