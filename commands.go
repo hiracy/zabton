@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 
 	"github.com/hiracy/zabton/logger"
 	"github.com/hiracy/zabton/zabbix"
@@ -14,6 +16,12 @@ const (
 	ENV_ZABBIX_API_USER     = "ZABTON_ZABBIX_USER"
 	ENV_ZABBIX_API_PASSWORD = "ZABTON_ZABBIX_PASSWORD"
 )
+
+// AvailableObjects are list of available objects
+var AvailableObjects = []string{
+	"host",
+	"hostgroup",
+}
 
 // Commands cli.Command object list
 var Commands = []cli.Command{
@@ -39,6 +47,11 @@ var pullCmd = cli.Command{
                 Pull text config file from specified Zabbix Server.
 `,
 	Action: doPullCmd,
+	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:  "objects, o",
+			Usage: "Apply specified objects only(comma or space separated)"},
+	},
 }
 
 var pushCmd = cli.Command{
@@ -48,6 +61,11 @@ var pushCmd = cli.Command{
                 Push text config file to specified Zabbix Server.
 `,
 	Action: doPushCmd,
+	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:  "objects, o",
+			Usage: "Apply specified objects only"},
+	},
 }
 
 var diffCmd = cli.Command{
@@ -91,28 +109,85 @@ func doApiInfoCmd(c *cli.Context) error {
 func doPullCmd(c *cli.Context) error {
 	logger.SetLevel(c.GlobalString("log-level"))
 
-	token := login(c, "pull")
-	logger.Log("debug", "auth: "+token)
+	objects := parseSubCmdArgs(c)
+
+	api := login(c, "pull")
+
+	if api == nil {
+		return nil
+	}
+
+	client := NewClient(objects, api)
+
+	for _, obj := range objects {
+		ret := reflect.ValueOf(client).MethodByName("Pull" + strings.Title(obj)).Call(nil)
+
+		var err error
+		if ret[0].Interface() != nil {
+			err = ret[0].Interface().(error)
+		}
+
+		if err != nil {
+			logger.Log("error", "pull"+strings.Title(obj)+": "+err.Error())
+			return nil
+		}
+	}
+
 	return nil
 }
 
 func doPushCmd(c *cli.Context) error {
 	logger.SetLevel(c.GlobalString("log-level"))
 
-	token := login(c, "push")
-	logger.Log("debug", "auth: "+token)
+	api := login(c, "push")
+
+	if api == nil {
+		return nil
+	}
+
+	logger.Log("debug", "auth: "+api.Auth)
 	return nil
 }
 
 func doDiffCmd(c *cli.Context) error {
 	logger.SetLevel(c.GlobalString("log-level"))
 
-	token := login(c, "diff")
-	logger.Log("debug", "auth: "+token)
+	api := login(c, "diff")
+
+	if api == nil {
+		return nil
+	}
+
+	logger.Log("debug", "auth: "+api.Auth)
 	return nil
 }
 
-func login(c *cli.Context, mode string) string {
+func parseSubCmdArgs(c *cli.Context) (objects []string) {
+	argObj := c.String("objects")
+	var parsedObj []string
+
+	if argObj == "" {
+		parsedObj = AvailableObjects
+	} else if strings.Index(argObj, " ") > 0 {
+		parsedObj = strings.Split(argObj, " ")
+	} else if strings.Index(argObj, ",") > 0 {
+		parsedObj = strings.Split(argObj, ",")
+	} else {
+		parsedObj = []string{argObj}
+	}
+
+	for _, parsed := range parsedObj {
+		for _, avails := range AvailableObjects {
+			if avails == parsed {
+				objects = append(objects, parsed)
+			}
+		}
+	}
+
+	return objects
+}
+
+func login(c *cli.Context, mode string) *zabbix.API {
 	var server string
 	var user string
 	var password string
@@ -132,18 +207,19 @@ func login(c *cli.Context, mode string) string {
 
 	if server == "" || user == "" || password == "" {
 		logger.Log("warn", "--server(-s) and --user(-u) and --password(-p) args are required.")
-		return ""
+		return nil
 	}
 
 	api := zabbix.NewAPI(server, user, password)
 
 	auth, err := api.Login()
 
+	logger.Log("debug", "auth: "+auth)
+
 	if err != nil {
 		logger.Log("error", "Login: "+err.Error())
-		return ""
+		return nil
 	}
 
-	logger.Log("debug", "auth: "+auth)
-	return auth
+	return api
 }
