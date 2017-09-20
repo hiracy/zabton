@@ -2,11 +2,29 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/user"
+	"reflect"
+	"strings"
 
 	"github.com/hiracy/zabton/logger"
 	"github.com/hiracy/zabton/zabbix"
 	"github.com/urfave/cli"
 )
+
+const (
+	ENV_ZABBIX_URL       = "ZABTON_ZABBIX_URL"
+	ENV_ZABBIX_USER      = "ZABTON_ZABBIX_USER"
+	ENV_ZABBIX_PASSWORD  = "ZABTON_ZABBIX_PASSWORD"
+	ENV_ZABTON_LOG_LEVEL = "ZABTON_LOG_LEVEL"
+	ENV_ZABTON_FILE_PATH = "ZABTON_FILE_PATH"
+)
+
+// AvailableObjects are list of available objects
+var AvailableObjects = []string{
+	"host",
+	"hostgroup",
+}
 
 // Commands cli.Command object list
 var Commands = []cli.Command{
@@ -23,11 +41,6 @@ var apiInfoCmd = cli.Command{
                 Show Zabbix Server API Version.
 `,
 	Action: doApiInfoCmd,
-	Flags: []cli.Flag{
-		cli.StringFlag{
-			Name:  "server, s",
-			Usage: "Zabbix server url(ex: http://api.zabbix.zabton.jp/api_jsonrpc.php)"},
-	},
 }
 
 var pullCmd = cli.Command{
@@ -39,14 +52,11 @@ var pullCmd = cli.Command{
 	Action: doPullCmd,
 	Flags: []cli.Flag{
 		cli.StringFlag{
-			Name:  "server, s",
-			Usage: "Zabbix server url(ex: http://api.zabbix.zabton.jp/api_jsonrpc.php)"},
+			Name:  "objects, o",
+			Usage: "Apply specified objects only(comma or space separated)"},
 		cli.StringFlag{
-			Name:  "user, u",
-			Usage: "Login user"},
-		cli.StringFlag{
-			Name:  "password, p",
-			Usage: "Login password"},
+			Name:  "file, f",
+			Usage: "File path of save destination."},
 	},
 }
 
@@ -57,6 +67,14 @@ var pushCmd = cli.Command{
                 Push text config file to specified Zabbix Server.
 `,
 	Action: doPushCmd,
+	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:  "objects, o",
+			Usage: "Apply specified objects only"},
+		cli.StringFlag{
+			Name:  "file, f",
+			Usage: "File path of read destination."},
+	},
 }
 
 var diffCmd = cli.Command{
@@ -69,11 +87,17 @@ var diffCmd = cli.Command{
 }
 
 func doApiInfoCmd(c *cli.Context) error {
-	logger.SetLevel(c.GlobalString("log-level"))
+	if logLevel := os.Getenv(ENV_ZABTON_LOG_LEVEL); logLevel == "" {
+		logger.SetLevel(c.GlobalString("log-level"))
+	}
 
-	server := c.String("server")
+	var server string
 
-	logger.Log("info", "start info cmd: "+
+	if server = os.Getenv(ENV_ZABBIX_URL); server == "" {
+		server = c.GlobalString("server")
+	}
+
+	logger.Log("info", "start Version() for info cmd: "+
 		"server="+server)
 
 	if server == "" {
@@ -94,51 +118,151 @@ func doApiInfoCmd(c *cli.Context) error {
 }
 
 func doPullCmd(c *cli.Context) error {
-	logger.SetLevel(c.GlobalString("log-level"))
 
-	token := login(c, "pull")
-	logger.Log("debug", "auth: "+token)
+	objects, editables, writepath, err := parseCmdArgs(c)
+
+	if writepath == "" {
+		return nil
+	}
+
+	if err != nil {
+		logger.Log("error", "parseCmdArgs: "+err.Error())
+		return nil
+	}
+
+	api := login(c, "pull")
+
+	if api == nil {
+		return nil
+	}
+
+	client := NewClient(api, writepath, "", editables)
+
+	for _, obj := range objects {
+		ret := reflect.ValueOf(client).MethodByName("Pull" + strings.Title(obj)).Call(nil)
+
+		if ret[0].Interface() != nil {
+			err = ret[0].Interface().(error)
+		}
+
+		if err != nil {
+			logger.Log("error", "pull"+strings.Title(obj)+": "+err.Error())
+			return nil
+		}
+	}
+
 	return nil
 }
 
 func doPushCmd(c *cli.Context) error {
-	logger.SetLevel(c.GlobalString("log-level"))
+	api := login(c, "push")
 
-	token := login(c, "push")
-	logger.Log("debug", "auth: "+token)
+	if api == nil {
+		return nil
+	}
+
+	logger.Log("debug", "auth: "+api.Auth)
 	return nil
 }
 
 func doDiffCmd(c *cli.Context) error {
-	logger.SetLevel(c.GlobalString("log-level"))
+	if logLevel := os.Getenv(ENV_ZABTON_LOG_LEVEL); logLevel == "" {
+		logger.SetLevel(c.GlobalString("log-level"))
+	}
 
-	token := login(c, "diff")
-	logger.Log("debug", "auth: "+token)
+	api := login(c, "diff")
+
+	if api == nil {
+		return nil
+	}
+
+	logger.Log("debug", "auth: "+api.Auth)
 	return nil
 }
 
-func login(c *cli.Context, mode string) string {
-	server := c.String("server")
-	user := c.String("user")
-	password := c.String("password")
+func parseCmdArgs(c *cli.Context) (objects []string, editables *EditableConfiguration, filepath string, err error) {
 
-	logger.Log("info", "start "+mode+" cmd: "+
+	if logLevel := os.Getenv(ENV_ZABTON_LOG_LEVEL); logLevel == "" {
+		logger.SetLevel(c.GlobalString("log-level"))
+	}
+
+	argObj := c.String("objects")
+	var parsedObj []string
+
+	if argObj == "" {
+		parsedObj = AvailableObjects
+	} else if strings.Index(argObj, " ") > 0 {
+		parsedObj = strings.Split(argObj, " ")
+	} else if strings.Index(argObj, ",") > 0 {
+		parsedObj = strings.Split(argObj, ",")
+	} else {
+		parsedObj = []string{argObj}
+	}
+
+	for _, parsed := range parsedObj {
+		for _, avails := range AvailableObjects {
+			if avails == parsed {
+				objects = append(objects, parsed)
+			}
+		}
+	}
+
+	editables, err = LoadConfig(c.GlobalString("config"))
+
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	filepath = c.String("file")
+
+	if filepath == "" {
+		if filepath = os.Getenv(ENV_ZABTON_FILE_PATH); filepath == "" {
+			logger.Log("warn", "--file(-f) arg is required.")
+		}
+	}
+
+	usr, err := user.Current()
+
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	return objects, editables, strings.Replace(filepath, "~", usr.HomeDir, 1), nil
+}
+
+func login(c *cli.Context, mode string) *zabbix.API {
+	var server string
+	var user string
+	var password string
+
+	if server = os.Getenv(ENV_ZABBIX_URL); server == "" {
+		server = c.GlobalString("server")
+	}
+	if user = os.Getenv(ENV_ZABBIX_USER); user == "" {
+		user = c.GlobalString("user")
+	}
+	if password = os.Getenv(ENV_ZABBIX_PASSWORD); password == "" {
+		password = c.GlobalString("password")
+	}
+
+	logger.Log("info", "start Login() for "+mode+" cmd: "+
 		"server="+server)
 
 	if server == "" || user == "" || password == "" {
 		logger.Log("warn", "--server(-s) and --user(-u) and --password(-p) args are required.")
-		return ""
+		return nil
 	}
 
 	api := zabbix.NewAPI(server, user, password)
 
 	auth, err := api.Login()
 
+	logger.Log("debug", "auth: "+auth)
+
 	if err != nil {
 		logger.Log("error", "Login: "+err.Error())
-		return ""
+		return nil
 	}
 
-	logger.Log("debug", "auth: "+auth)
-	return auth
+	return api
 }

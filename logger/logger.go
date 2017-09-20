@@ -43,6 +43,8 @@ func SetLevel(level string) {
 		colog.SetMinLevel(colog.LError)
 	case "alert":
 		colog.SetMinLevel(colog.LAlert)
+	default:
+		colog.SetMinLevel(colog.LWarning)
 	}
 }
 
