@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"reflect"
 	"strings"
 
@@ -12,9 +13,11 @@ import (
 )
 
 const (
-	ENV_ZABBIX_API_URL      = "ZABTON_ZABBIX_URL"
-	ENV_ZABBIX_API_USER     = "ZABTON_ZABBIX_USER"
-	ENV_ZABBIX_API_PASSWORD = "ZABTON_ZABBIX_PASSWORD"
+	ENV_ZABBIX_URL       = "ZABTON_ZABBIX_URL"
+	ENV_ZABBIX_USER      = "ZABTON_ZABBIX_USER"
+	ENV_ZABBIX_PASSWORD  = "ZABTON_ZABBIX_PASSWORD"
+	ENV_ZABTON_LOG_LEVEL = "ZABTON_LOG_LEVEL"
+	ENV_ZABTON_FILE_PATH = "ZABTON_FILE_PATH"
 )
 
 // AvailableObjects are list of available objects
@@ -51,6 +54,9 @@ var pullCmd = cli.Command{
 		cli.StringFlag{
 			Name:  "objects, o",
 			Usage: "Apply specified objects only(comma or space separated)"},
+		cli.StringFlag{
+			Name:  "file, f",
+			Usage: "File path of save destination."},
 	},
 }
 
@@ -65,6 +71,9 @@ var pushCmd = cli.Command{
 		cli.StringFlag{
 			Name:  "objects, o",
 			Usage: "Apply specified objects only"},
+		cli.StringFlag{
+			Name:  "file, f",
+			Usage: "File path of read destination."},
 	},
 }
 
@@ -78,15 +87,17 @@ var diffCmd = cli.Command{
 }
 
 func doApiInfoCmd(c *cli.Context) error {
-	logger.SetLevel(c.GlobalString("log-level"))
+	if logLevel := os.Getenv(ENV_ZABTON_LOG_LEVEL); logLevel == "" {
+		logger.SetLevel(c.GlobalString("log-level"))
+	}
 
 	var server string
 
-	if server = os.Getenv(ENV_ZABBIX_API_URL); server == "" {
+	if server = os.Getenv(ENV_ZABBIX_URL); server == "" {
 		server = c.GlobalString("server")
 	}
 
-	logger.Log("info", "start info cmd: "+
+	logger.Log("info", "start Version() for info cmd: "+
 		"server="+server)
 
 	if server == "" {
@@ -107,9 +118,17 @@ func doApiInfoCmd(c *cli.Context) error {
 }
 
 func doPullCmd(c *cli.Context) error {
-	logger.SetLevel(c.GlobalString("log-level"))
 
-	objects := parseSubCmdArgs(c)
+	objects, editables, writepath, err := parseCmdArgs(c)
+
+	if writepath == "" {
+		return nil
+	}
+
+	if err != nil {
+		logger.Log("error", "parseCmdArgs: "+err.Error())
+		return nil
+	}
 
 	api := login(c, "pull")
 
@@ -117,12 +136,11 @@ func doPullCmd(c *cli.Context) error {
 		return nil
 	}
 
-	client := NewClient(objects, api)
+	client := NewClient(api, writepath, "", editables)
 
 	for _, obj := range objects {
 		ret := reflect.ValueOf(client).MethodByName("Pull" + strings.Title(obj)).Call(nil)
 
-		var err error
 		if ret[0].Interface() != nil {
 			err = ret[0].Interface().(error)
 		}
@@ -137,8 +155,6 @@ func doPullCmd(c *cli.Context) error {
 }
 
 func doPushCmd(c *cli.Context) error {
-	logger.SetLevel(c.GlobalString("log-level"))
-
 	api := login(c, "push")
 
 	if api == nil {
@@ -150,7 +166,9 @@ func doPushCmd(c *cli.Context) error {
 }
 
 func doDiffCmd(c *cli.Context) error {
-	logger.SetLevel(c.GlobalString("log-level"))
+	if logLevel := os.Getenv(ENV_ZABTON_LOG_LEVEL); logLevel == "" {
+		logger.SetLevel(c.GlobalString("log-level"))
+	}
 
 	api := login(c, "diff")
 
@@ -162,7 +180,12 @@ func doDiffCmd(c *cli.Context) error {
 	return nil
 }
 
-func parseSubCmdArgs(c *cli.Context) (objects []string) {
+func parseCmdArgs(c *cli.Context) (objects []string, editables *EditableConfiguration, filepath string, err error) {
+
+	if logLevel := os.Getenv(ENV_ZABTON_LOG_LEVEL); logLevel == "" {
+		logger.SetLevel(c.GlobalString("log-level"))
+	}
+
 	argObj := c.String("objects")
 	var parsedObj []string
 
@@ -184,7 +207,27 @@ func parseSubCmdArgs(c *cli.Context) (objects []string) {
 		}
 	}
 
-	return objects
+	editables, err = LoadConfig(c.GlobalString("config"))
+
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	filepath = c.String("file")
+
+	if filepath == "" {
+		if filepath = os.Getenv(ENV_ZABTON_FILE_PATH); filepath == "" {
+			logger.Log("warn", "--file(-f) arg is required.")
+		}
+	}
+
+	usr, err := user.Current()
+
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	return objects, editables, strings.Replace(filepath, "~", usr.HomeDir, 1), nil
 }
 
 func login(c *cli.Context, mode string) *zabbix.API {
@@ -192,17 +235,17 @@ func login(c *cli.Context, mode string) *zabbix.API {
 	var user string
 	var password string
 
-	if server = os.Getenv(ENV_ZABBIX_API_URL); server == "" {
+	if server = os.Getenv(ENV_ZABBIX_URL); server == "" {
 		server = c.GlobalString("server")
 	}
-	if user = os.Getenv(ENV_ZABBIX_API_USER); user == "" {
+	if user = os.Getenv(ENV_ZABBIX_USER); user == "" {
 		user = c.GlobalString("user")
 	}
-	if password = os.Getenv(ENV_ZABBIX_API_PASSWORD); password == "" {
+	if password = os.Getenv(ENV_ZABBIX_PASSWORD); password == "" {
 		password = c.GlobalString("password")
 	}
 
-	logger.Log("info", "start "+mode+" cmd: "+
+	logger.Log("info", "start Login() for "+mode+" cmd: "+
 		"server="+server)
 
 	if server == "" || user == "" || password == "" {

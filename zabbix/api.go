@@ -64,9 +64,12 @@ func (api *API) Version() (version string, err error) {
 		return "", res.Error
 	}
 
-	version = res.Result.(string)
+	var ok bool
+	if version, ok = res.Result.(string); ok {
+		return
+	}
 
-	return
+	return "", &ZabbixError{-1, "", "api response type error(string)"}
 }
 
 // Login actually login to zabbix server.
@@ -84,10 +87,33 @@ func (api *API) Login() (auth string, err error) {
 		return "", res.Error
 	}
 
-	auth = res.Result.(string)
-	api.Auth = auth
+	var ok bool
+	if auth, ok = res.Result.(string); ok {
+		api.Auth = auth
+		return
+	}
 
-	return
+	return "", &ZabbixError{-1, "", "api response type error(string)"}
+}
+
+// GetHost allows to retrieve hosts according to the given parameters.
+func (api *API) GetHost(params interface{}) (hosts []interface{}, err error) {
+	res, err := api.request("host.get", params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if res.Error != nil && res.Error.Code != 0 {
+		return nil, res.Error
+	}
+
+	var ok bool
+	if hosts, ok = res.Result.([]interface{}); ok {
+		return
+	}
+
+	return nil, &ZabbixError{-1, "", "api response type error([]interface{})"}
 }
 
 // request requests api to zabbix server.

@@ -16,8 +16,8 @@ func main() {
 	app.Commands = Commands
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "log-level",
-			Value: "info",
+			Name:  "log-level, l",
+			Value: "warn",
 			Usage: "output log level[trace|debug|info|warn|fatal|alert]",
 		},
 		cli.StringFlag{
@@ -29,6 +29,10 @@ func main() {
 		cli.StringFlag{
 			Name:  "password, p",
 			Usage: "Login password"},
+		cli.StringFlag{
+			Name:  "config, c",
+			Value: "zabton.conf",
+			Usage: "Zabton definitions file path"},
 	}
 
 	cpu := runtime.NumCPU()
