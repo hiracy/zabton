@@ -12,6 +12,8 @@ import (
 
 const (
 	ZABTON_WRITE_PERMISSION = 0666
+	ZABTON_JSON_FILE_PREFIX = ""
+	ZABTON_JSON_FILE_INDENT = "    "
 )
 
 // Client is the client that interpose zabton and zabbix.
@@ -56,6 +58,8 @@ func (client *Client) PullHost() error {
 		return err
 	}
 
+	logger.Log("info", "succeeded PullHost()")
+
 	return nil
 }
 
@@ -93,6 +97,7 @@ func saveZabbixObjects(existingObjects map[string]interface{}, updateObjects []i
 	defer f.Close()
 
 	encoder := json.NewEncoder(f)
+	encoder.SetIndent(ZABTON_JSON_FILE_PREFIX, ZABTON_JSON_FILE_INDENT)
 	err = encoder.Encode(existingObjects)
 	if err != nil {
 		return err
