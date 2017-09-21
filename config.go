@@ -9,12 +9,12 @@ type Config struct {
 	Zabbix ZabbixConfiguration
 }
 
-// ZabbixConfig is the config by Zabbix
+// ZabbixConfiguration is the config by Zabbix
 type ZabbixConfiguration struct {
 	Editable EditableConfiguration
 }
 
-// EditableConfig is the config by Zabbix editable objects
+// EditableConfiguration is the config by Zabbix editable objects
 type EditableConfiguration struct {
 	Host []string `toml:"host"`
 }

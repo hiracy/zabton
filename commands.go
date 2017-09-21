@@ -13,11 +13,11 @@ import (
 )
 
 const (
-	ENV_ZABBIX_URL       = "ZABTON_ZABBIX_URL"
-	ENV_ZABBIX_USER      = "ZABTON_ZABBIX_USER"
-	ENV_ZABBIX_PASSWORD  = "ZABTON_ZABBIX_PASSWORD"
-	ENV_ZABTON_LOG_LEVEL = "ZABTON_LOG_LEVEL"
-	ENV_ZABTON_FILE_PATH = "ZABTON_FILE_PATH"
+	envZabbixURL      = "ZABTON_ZABBIX_URL"
+	envZabbixUser     = "ZABTON_ZABBIX_USER"
+	envZabbixPassword = "ZABTON_ZABBIX_PASSWORD"
+	envZabtonLogLevel = "ZABTON_LOG_LEVEL"
+	envZabtonFilePath = "ZABTON_FILE_PATH"
 )
 
 // AvailableObjects are list of available objects
@@ -40,7 +40,7 @@ var apiInfoCmd = cli.Command{
 	Description: `
                 Show Zabbix Server API Version.
 `,
-	Action: doApiInfoCmd,
+	Action: doAPIInfoCmd,
 }
 
 var pullCmd = cli.Command{
@@ -86,14 +86,14 @@ var diffCmd = cli.Command{
 	Action: doPushCmd,
 }
 
-func doApiInfoCmd(c *cli.Context) error {
-	if logLevel := os.Getenv(ENV_ZABTON_LOG_LEVEL); logLevel == "" {
+func doAPIInfoCmd(c *cli.Context) error {
+	if logLevel := os.Getenv(envZabtonLogLevel); logLevel == "" {
 		logger.SetLevel(c.GlobalString("log-level"))
 	}
 
 	var server string
 
-	if server = os.Getenv(ENV_ZABBIX_URL); server == "" {
+	if server = os.Getenv(envZabbixURL); server == "" {
 		server = c.GlobalString("server")
 	}
 
@@ -166,7 +166,7 @@ func doPushCmd(c *cli.Context) error {
 }
 
 func doDiffCmd(c *cli.Context) error {
-	if logLevel := os.Getenv(ENV_ZABTON_LOG_LEVEL); logLevel == "" {
+	if logLevel := os.Getenv(envZabtonLogLevel); logLevel == "" {
 		logger.SetLevel(c.GlobalString("log-level"))
 	}
 
@@ -182,7 +182,7 @@ func doDiffCmd(c *cli.Context) error {
 
 func parseCmdArgs(c *cli.Context) (objects []string, editables *EditableConfiguration, filepath string, err error) {
 
-	if logLevel := os.Getenv(ENV_ZABTON_LOG_LEVEL); logLevel == "" {
+	if logLevel := os.Getenv(envZabtonLogLevel); logLevel == "" {
 		logger.SetLevel(c.GlobalString("log-level"))
 	}
 
@@ -216,7 +216,7 @@ func parseCmdArgs(c *cli.Context) (objects []string, editables *EditableConfigur
 	filepath = c.String("file")
 
 	if filepath == "" {
-		if filepath = os.Getenv(ENV_ZABTON_FILE_PATH); filepath == "" {
+		if filepath = os.Getenv(envZabtonFilePath); filepath == "" {
 			logger.Log("warn", "--file(-f) arg is required.")
 		}
 	}
@@ -235,13 +235,13 @@ func login(c *cli.Context, mode string) *zabbix.API {
 	var user string
 	var password string
 
-	if server = os.Getenv(ENV_ZABBIX_URL); server == "" {
+	if server = os.Getenv(envZabbixURL); server == "" {
 		server = c.GlobalString("server")
 	}
-	if user = os.Getenv(ENV_ZABBIX_USER); user == "" {
+	if user = os.Getenv(envZabbixUser); user == "" {
 		user = c.GlobalString("user")
 	}
-	if password = os.Getenv(ENV_ZABBIX_PASSWORD); password == "" {
+	if password = os.Getenv(envZabbixPassword); password == "" {
 		password = c.GlobalString("password")
 	}
 
