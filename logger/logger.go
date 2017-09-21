@@ -28,7 +28,7 @@ func Log(severity, message string) {
 	log.Printf(severity + ": " + message)
 }
 
-// SeLevel set log output level.
+// SetLevel set log output level.
 func SetLevel(level string) {
 	switch level {
 	case "trace":

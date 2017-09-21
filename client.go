@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 
@@ -11,9 +10,9 @@ import (
 )
 
 const (
-	ZABTON_WRITE_PERMISSION = 0666
-	ZABTON_JSON_FILE_PREFIX = ""
-	ZABTON_JSON_FILE_INDENT = "    "
+	zabtonWritePermission = 0666
+	zabtonJSONFilePrefix  = ""
+	zabtonJSONFileIndent  = "    "
 )
 
 // Client is the client that interpose zabton and zabbix.
@@ -63,7 +62,7 @@ func (client *Client) PullHost() error {
 	return nil
 }
 
-// PullHostGroup download Hostgroup infomation from zabbix server.
+// PullHostgroup download Hostgroup infomation from zabbix server.
 func (client *Client) PullHostgroup() error {
 	logger.Log("info", "start PullHostgroup(path="+client.writePath+")")
 	return nil
@@ -84,20 +83,20 @@ func saveZabbixObjects(existingObjects map[string]interface{}, updateObjects []i
 
 			saving = append(saving, content)
 		} else {
-			return errors.New(fmt.Sprintf("Irregular format: %T", obj))
+			return fmt.Errorf("Irregular format: %T", obj)
 		}
 	}
 
 	existingObjects[objectName] = saving
 
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, ZABTON_WRITE_PERMISSION)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, zabtonWritePermission)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
 	encoder := json.NewEncoder(f)
-	encoder.SetIndent(ZABTON_JSON_FILE_PREFIX, ZABTON_JSON_FILE_INDENT)
+	encoder.SetIndent(zabtonJSONFilePrefix, zabtonJSONFileIndent)
 	err = encoder.Encode(existingObjects)
 	if err != nil {
 		return err
@@ -127,5 +126,5 @@ func readAllZabbixObjects(path string) (objects map[string]interface{}, err erro
 		return v, nil
 	}
 
-	return nil, errors.New(fmt.Sprintf("Irregular format: %s", path))
+	return nil, fmt.Errorf("Irregular format: %s", path)
 }
