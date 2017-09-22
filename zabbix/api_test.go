@@ -6,7 +6,7 @@ import (
 
 func TestVersion(t *testing.T) {
 	api := NewAPI(
-		testZabbixUrl,
+		testZabbixURL,
 		"",
 		"")
 
@@ -25,7 +25,7 @@ func TestVersion(t *testing.T) {
 
 func TestLogin(t *testing.T) {
 	api := NewAPI(
-		testZabbixUrl,
+		testZabbixURL,
 		testZabbixUser,
 		testZabbixPassword)
 
