@@ -9,6 +9,7 @@ var testZabbixVersion string
 var testZabbixURL string
 var testZabbixUser string
 var testZabbixPassword string
+var testAuth string
 
 const (
 	zabbixAPIVersionDefault  = "3.2.7"
@@ -37,6 +38,19 @@ func initialize() {
 	if testZabbixPassword = os.Getenv("ZABBIX_API_PASSWORD"); testZabbixPassword == "" {
 		testZabbixPassword = zabbixAPIPasswordDefault
 	}
+
+	testAuth = getTestAuth()
+}
+
+func getTestAuth() string {
+	api := NewAPI(
+		testZabbixURL,
+		testZabbixUser,
+		testZabbixPassword)
+
+	auth, _ := api.Login()
+
+	return auth
 }
 
 func finalize() {
