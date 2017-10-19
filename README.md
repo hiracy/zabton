@@ -4,7 +4,47 @@
 
 ## Description
 
+CLI tool for managing Zabbix with text base configuration.
+
 ## Usage
+
+Edit your zabbix environment and json file path like this sample.
+
+```
+vi /your/dir/.zaton
+```
+
+```
+export ZABTON_ZABBIX_URL="http://your.zabbix.com/api_jsonrpc.php"
+export ZABTON_ZABBIX_USER="you"
+export ZABTON_ZABBIX_PASSWORD="your_zabbix_password"
+export ZABTON_LOG_LEVEL="info"
+export ZABTON_FILE_PATH="/your/zabbix/config/path.json"
+```
+
+Load this file.
+
+```
+source /your/dir/.zaton
+```
+
+Pull from Zabbix Server.
+
+```
+zabton pull
+```
+
+Edit zabbix configuration.
+
+```
+vi /your/zabbix/config/path.json
+```
+
+Push to Zabbix Server.
+
+```
+zabton push
+```
 
 ## Install
 
