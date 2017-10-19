@@ -70,7 +70,7 @@ var pushCmd = cli.Command{
 	Flags: []cli.Flag{
 		cli.StringFlag{
 			Name:  "objects, o",
-			Usage: "Apply specified objects only"},
+			Usage: "Apply specified objects only(comma or space separated)"},
 		cli.StringFlag{
 			Name:  "file, f",
 			Usage: "File path of read destination."},
@@ -146,7 +146,7 @@ func doPullCmd(c *cli.Context) error {
 		}
 
 		if err != nil {
-			logger.Log("error", "pull"+strings.Title(obj)+": "+err.Error())
+			logger.Log("error", "Pull"+strings.Title(obj)+": "+err.Error())
 			return nil
 		}
 	}
@@ -155,13 +155,39 @@ func doPullCmd(c *cli.Context) error {
 }
 
 func doPushCmd(c *cli.Context) error {
-	api := login(c, "push")
+
+	objects, editables, readpath, err := parseCmdArgs(c)
+
+	if readpath == "" {
+		return nil
+	}
+
+	if err != nil {
+		logger.Log("error", "parseCmdArgs: "+err.Error())
+		return nil
+	}
+
+	api := login(c, "pull")
 
 	if api == nil {
 		return nil
 	}
 
-	logger.Log("debug", "auth: "+api.Auth)
+	client := NewClient(api, "", readpath, editables)
+
+	for _, obj := range objects {
+		ret := reflect.ValueOf(client).MethodByName("Push" + strings.Title(obj)).Call(nil)
+
+		if ret[0].Interface() != nil {
+			err = ret[0].Interface().(error)
+		}
+
+		if err != nil {
+			logger.Log("error", "Push"+strings.Title(obj)+": "+err.Error())
+			return nil
+		}
+	}
+
 	return nil
 }
 

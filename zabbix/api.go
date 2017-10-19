@@ -119,6 +119,30 @@ func (api *API) GetHost(params interface{}) (hosts []interface{}, err error) {
 	return nil, &ZabtonZabbixError{-1, "", "api response type error([]interface{})"}
 }
 
+// UpdateHost allows to update existing hosts.
+func (api *API) UpdateHost(params interface{}) (updatedHostIds []string, err error) {
+	res, err := api.request("host.update", params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if res.Error != nil && res.Error.Code != 0 {
+		return nil, res.Error
+	}
+
+	if result, ok := res.Result.(map[string]interface{}); ok {
+		if id, ok := result["hostids"].([]interface{}); ok {
+			for _, s := range id {
+				updatedHostIds = append(updatedHostIds, fmt.Sprint(s))
+			}
+			return updatedHostIds, nil
+		}
+	}
+
+	return nil, &ZabtonZabbixError{-1, "", "api response type error(map[string]interface{})"}
+}
+
 // request requests api to zabbix server.
 func (api *API) request(method string, params interface{}) (response JSONRpcResponse, err error) {
 	var id int32

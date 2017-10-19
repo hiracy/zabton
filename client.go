@@ -45,7 +45,7 @@ func (client *Client) PullHost() error {
 
 	logger.Log("info", "start readAllZabbixObjects()")
 
-	existingObjects, err := readAllZabbixObjects(client.writePath)
+	existingObjects, err := readAllZabbixObjects(client.writePath, true)
 
 	if err != nil {
 		return err
@@ -62,9 +62,96 @@ func (client *Client) PullHost() error {
 	return nil
 }
 
+// PushHost upload Host infomation to zabbix server.
+func (client *Client) PushHost() error {
+	logger.Log("info", "start PushHost()")
+
+	params := make(map[string]interface{})
+	params["output"] = "extend"
+	params["selectGroups"] = "extend"
+	params["selectParentTemplates"] = "extend"
+
+	remoteAllObjects, err := client.api.GetHost(params)
+
+	if err != nil {
+		return err
+	}
+
+	var updateLimitedObjects []map[string]interface{}
+
+	for _, obj := range remoteAllObjects {
+		if o, ok := obj.(map[string]interface{}); ok {
+			content := map[string]interface{}{}
+			content["hostid"] = o["hostid"]
+
+			for _, e := range client.editables.Host {
+				if v, ok := o[e]; ok {
+					content[e] = v
+				}
+			}
+
+			updateLimitedObjects = append(updateLimitedObjects, content)
+		} else {
+			return fmt.Errorf("Irregular format: %T", obj)
+		}
+	}
+
+	logger.Log("info", "start readAllZabbixObjects()")
+
+	localAllObjects, err := readAllZabbixObjects(client.readPath, false)
+
+	if err != nil {
+		return err
+	}
+
+	var localHostObjects []interface{}
+	if v, ok := localAllObjects["host"].([]interface{}); !ok {
+		return fmt.Errorf("Irregular format: %T", v)
+	} else {
+		localHostObjects = v
+	}
+
+	for _, update := range updateLimitedObjects {
+		for _, local := range localHostObjects {
+			if mLocal, ok := local.(map[string]interface{}); ok {
+				if local_name, ok := mLocal["name"].(string); ok {
+					if update_name, ok := update["name"].(string); ok {
+						params = make(map[string]interface{})
+						params["hostid"] = update["hostid"]
+
+						if local_name == update_name {
+							for lk, lv := range mLocal {
+								params[lk] = lv
+							}
+						}
+
+					}
+
+				}
+
+				_, err := client.api.UpdateHost(params)
+
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	logger.Log("info", "succeeded PushHost()")
+
+	return nil
+}
+
 // PullHostgroup download Hostgroup infomation from zabbix server.
 func (client *Client) PullHostgroup() error {
 	logger.Log("info", "start PullHostgroup(path="+client.writePath+")")
+	return nil
+}
+
+// PushHostgroup upload Hostgroup infomation to zabbix server.
+func (client *Client) PushHostgroup() error {
+	logger.Log("info", "start PushHostgroup(path="+client.readPath+")")
 	return nil
 }
 
@@ -105,10 +192,10 @@ func saveZabbixObjects(existingObjects map[string]interface{}, updateObjects []i
 	return nil
 }
 
-func readAllZabbixObjects(path string) (objects map[string]interface{}, err error) {
+func readAllZabbixObjects(path string, createIfNotExist bool) (objects map[string]interface{}, err error) {
 	f, err := os.Open(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if os.IsNotExist(err) && createIfNotExist {
 			return make(map[string]interface{}), nil
 		}
 		return nil, err
@@ -121,7 +208,6 @@ func readAllZabbixObjects(path string) (objects map[string]interface{}, err erro
 	if err != nil {
 		return nil, err
 	}
-
 	if v, ok := obj.(map[string]interface{}); ok {
 		return v, nil
 	}
